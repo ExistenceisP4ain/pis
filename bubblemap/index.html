@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>PIS Map</title>
+    </head>
+    <body>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="/">PIS projekt 2020</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/circle">Krug</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map">Mapa</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/bubblemap">Mjehuričasta karta</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/graf">Graf</a>
+          </li>
+        </ul>
+        <span class="navbar-text">
+          Poslovni informacijski sustavi
+        </span>
+      </div>
+    </nav>
+  <meta charset="utf-8">
+<br>
+	<div class="container">
+	<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Karta</li>
+  </ol>
+</nav></div>
+
+<br>
+
+  <center>
+    <svg id="my_dataviz" width="1366" height="900"></svg>
+  </center>
+</body>
+
+</html>
+<script>
+  var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+  var projection = d3.geoMercator()
+    .center([0, 20])
+    .scale(200)
+    .translate([width / 2, height / 2])
+
+  d3.queue()
+    .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+    .defer(d3.csv, "2019.csv")
+    .await(ready);
+
+  function ready(error, dataGeo, data) {
+
+    var allContinent = d3.map(data, function (d) { return (d.naziv) }).keys()
+    var color = d3.scaleOrdinal()
+      .domain(allContinent)
+      .range(d3.schemePaired);
+
+    var valueExtent = d3.extent(data, function (d) { return +d.n; })
+    var size = d3.scaleSqrt()
+      .domain(valueExtent)
+      .range([1, 25])
+
+    svg.append("g")
+      .selectAll("path")
+      .data(dataGeo.features)
+      .enter()
+      .append("path")
+      .attr("fill", "#b8b8b8")
+      .attr("d", d3.geoPath()
+        .projection(projection)
+      )
+      .style("stroke", "none")
+      .style("opacity", .4)
+
+    svg
+      .selectAll("myCircles")
+      .data(data.sort(function (a, b) { return +b.n - +a.n }).filter(function (d, i) { return i < 1000 }))
+      .enter()
+      .append("circle")
+      .attr("cx", function (d) { return projection([+d.homelon, +d.homelat])[0] })
+      .attr("cy", function (d) { return projection([+d.homelon, +d.homelat])[1] })
+      .attr("r", function (d) { return size(+d.n) })
+      .style("fill", function (d) { return color(d.naziv) })
+      .attr("stroke", function (d) { if (d.n > 2000) { return "black" } else { return "none" } })
+      .attr("stroke-width", 1)
+      .attr("fill-opacity", .4)
+
+    svg
+      .append("text")
+      .attr("text-anchor", "end")
+      .style("fill", "red")
+      .attr("x", width - 10)
+      .attr("y", height - 30)
+      .attr("width", 90)
+      .html("1-12/2019")
+      .style("font-size", 24)
+
+    var valuesToShow = [300000, 1050000]
+    var xCircle = 40
+    var xLabel = 90
+    svg
+      .selectAll("legend")
+      .data(valuesToShow)
+      .enter()
+      .append("circle")
+      .attr("cx", xCircle)
+      .attr("cy", function (d) { return height - size(d) })
+      .attr("r", function (d) { return size(d) })
+      .style("fill", "none")
+      .attr("stroke", "black")
+
+    svg
+      .selectAll("legend")
+      .data(valuesToShow)
+      .enter()
+      .append("line")
+      .attr('x1', function (d) { return xCircle + size(d) })
+      .attr('x2', xLabel)
+      .attr('y1', function (d) { return height - size(d) })
+      .attr('y2', function (d) { return height - size(d) })
+      .attr('stroke', 'black')
+      .style('stroke-dasharray', ('2,2'))
+
+    svg
+      .selectAll("legend")
+      .data(valuesToShow)
+      .enter()
+      .append("text")
+      .attr('x', xLabel)
+      .attr('y', function (d) { return height - size(d) })
+      .text(function (d) { return d })
+      .style("font-size", 15)
+      .attr('alignment-baseline', 'middle')
+  }
+
+</script>
