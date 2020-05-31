@@ -38,7 +38,7 @@ svg.select(".legendThreshold")
 
 // Load external data and boot
 d3.queue()
-    .defer(d3.json, "http://enjalot.github.io/wwsd/data/world/world-110m.geojson")
+    .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
     .defer(d3.csv, "mooc-countries.csv", function(d) { data.set(d.code, +d.total); })
     .await(ready);
 
